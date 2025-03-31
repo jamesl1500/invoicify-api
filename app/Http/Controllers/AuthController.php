@@ -26,6 +26,9 @@ class AuthController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
+        // Delete previous tokens to avoid duplicates
+        $user->tokens()->delete();
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json(['token' => $token, 'user' => $user], 200);
@@ -54,9 +57,7 @@ class AuthController extends Controller
             'password' => Hash::make($request->input('password')),
         ]);
 
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json(['token' => $token, 'user' => $user], 201);
+        return response()->json(['user' => $user], 201);
     }
 
 

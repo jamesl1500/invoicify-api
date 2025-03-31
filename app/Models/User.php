@@ -18,6 +18,7 @@ class User extends Authenticatable
 
     protected $keyType = 'string';
     public $incrementing = false;
+    protected $primaryKey = 'id';
 
     /**
      * The attributes that are mass assignable.
@@ -25,7 +26,6 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'id',
         'name',
         'email',
         'password',
@@ -57,6 +57,19 @@ class User extends Authenticatable
 
     public function tokens()
     {
-        return $this->morphMany(PersonalAccessToken::class, 'tokenable', 'tokenable_type', 'tokenable_id', 'id');
+        return $this->morphMany(PersonalAccessToken::class, 'tokenable', "tokenable_type", "tokenable_id");
+    }
+
+    /**
+     * Generate a UUID when creating a new user.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+        static::creating(function ($model) {
+            if (empty($model->id)) {
+                $model->id = (string) \Illuminate\Support\Str::uuid();
+            }
+        });
     }
 }
