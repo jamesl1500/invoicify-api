@@ -8,17 +8,12 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 use Laravel\Sanctum\HasApiTokens;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasApiTokens, HasUuids;
-
-    protected $keyType = 'string';
-    public $incrementing = false;
-    protected $primaryKey = 'id';
+    use HasFactory, Notifiable, HasApiTokens;
 
     /**
      * The attributes that are mass assignable.
@@ -49,27 +44,8 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'id' => 'string',
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
-    }
-
-    public function tokens()
-    {
-        return $this->morphMany(PersonalAccessToken::class, 'tokenable', "tokenable_type", "tokenable_id");
-    }
-
-    /**
-     * Generate a UUID when creating a new user.
-     */
-    protected static function boot()
-    {
-        parent::boot();
-        static::creating(function ($model) {
-            if (empty($model->id)) {
-                $model->id = (string) \Illuminate\Support\Str::uuid();
-            }
-        });
     }
 }

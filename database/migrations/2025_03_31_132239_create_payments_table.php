@@ -15,7 +15,7 @@ return new class extends Migration
             $table->uuid("id")->primary();
             $table->uuid('invoice_id');
             $table->uuid('client_id');
-            $table->uuid('user_id');
+            $table->foreignId('user_id');
             $table->enum('payment_method', ['credit_card', 'bank_transfer', 'paypal']);
             $table->decimal('amount', 15, 2);
             $table->string('transaction_id')->unique();
