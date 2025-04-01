@@ -20,6 +20,15 @@ class ClientController extends Controller
     public function store(Request $request)
     {
         //
+        // Validate the request data
+        $validatedData = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'phone' => 'nullable|string|max:20',
+            'address' => 'nullable|string|max:255',
+        ]);
+
+        // 
     }
 
     /**
