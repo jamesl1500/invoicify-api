@@ -19,6 +19,8 @@ return new class extends Migration
             $table->date('issue_date');
             $table->date('due_date');
             $table->enum('status', ['draft', 'pending', 'paid', 'overdue'])->default('draft');
+            $table->decimal('sub_total', 15, 2);
+            $table->decimal('tax_rate', 5, 2)->default(0.00);
             $table->decimal('total_amount', 15, 2);
             $table->decimal('tax_amount', 15, 2)->default(0.00);
             $table->decimal('discount_amount', 15, 2)->default(0.00);
