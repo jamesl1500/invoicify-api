@@ -61,7 +61,7 @@ class Clients extends Model
      */
     public function invoices()
     {
-        return $this->hasMany(Invoices::class);
+        return $this->hasMany(Invoices::class, 'client_id');
     }
 
     /**
@@ -71,6 +71,6 @@ class Clients extends Model
      */
     public function payments()
     {
-        return $this->hasMany(Payments::class);
+        return $this->hasMany(Payments::class, 'client_id');
     }
 }

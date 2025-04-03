@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 
+use App\Models\Clients;
+
 class ClientController extends Controller
 {
     /**
@@ -11,7 +13,21 @@ class ClientController extends Controller
      */
     public function index()
     {
-        //
+        // Make sure the user is authenticated
+        if (!$user = auth()->user()) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Get the clients for the authenticated user
+        $clients = Clients::where('user_id', $user->id)->get();
+
+        // Check if the user has any clients
+        if ($clients->isEmpty()) {
+            return response()->json(['message' => 'No clients found'], 404);
+        }
+
+        // Return the clients as a JSON response
+        return response()->json(['clients' => $clients], 200);
     }
 
     /**
@@ -28,7 +44,26 @@ class ClientController extends Controller
             'address' => 'nullable|string|max:255',
         ]);
 
-        // 
+        // Make sure the user is authenticated
+        if (!$request->user()) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Create a new client
+        $client = new Clients();
+
+        $client->user_id = $request->user()->id;
+        $client->name = $validatedData['name'];
+        $client->email = $validatedData['email'];
+        $client->phone = $validatedData['phone'];
+        $client->address = $validatedData['address'];
+
+        // Save the client to the database
+        if ($client->save()) {
+            return response()->json(['message' => 'Client created successfully', 'client' => $client], 201);
+        } else {
+            return response()->json(['error' => 'Failed to create client'], 500);
+        }
     }
 
     /**
@@ -36,7 +71,33 @@ class ClientController extends Controller
      */
     public function show(string $id)
     {
-        //
+        // Make sure the user is authenticated
+        if (!$user = auth()->user()) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Find the client by ID
+        $client = Clients::where('user_id', $user->id)->where('id', $id)->first();
+
+        // Check if the client exists
+        if (!$client) {
+            return response()->json(['error' => 'Client not found'], 404);
+        }
+
+        // Check if the client belongs to the authenticated user
+        if ($client->user_id !== $user->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+
+        // Get the clients invoices
+        $invoices = $client->invoices()->get();
+
+        // Get the clients payments
+        $payments = $client->payments()->get();
+
+        // Return the client as a JSON response
+        return response()->json(['client' => $client, 'invoices' => $invoices, 'payments' => $payments], 200);
     }
 
     /**
