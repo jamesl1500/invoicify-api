@@ -105,7 +105,44 @@ class ClientController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        // Validate the request data
+        $validatedData = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'phone' => 'nullable|string|max:20',
+            'address' => 'nullable|string|max:255',
+        ]);
+
+        // Make sure the user is authenticated
+        if (!$user = auth()->user()) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Find the client by ID
+        $client = Clients::where('user_id', $user->id)->where('id', $id)->first();
+
+        // Check if the client exists
+        if (!$client) {
+            return response()->json(['error' => 'Client not found'], 404);
+        }
+
+        // Check if the client belongs to the authenticated user
+        if ($client->user_id !== $user->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        // Update the client
+        $client->name = $validatedData['name'];
+        $client->email = $validatedData['email'];
+        $client->phone = $validatedData['phone'];
+        $client->address = $validatedData['address'];
+
+        // Save the client to the database
+        if ($client->save()) {
+            return response()->json(['message' => 'Client updated successfully', 'client' => $client], 200);
+        } else {
+            return response()->json(['error' => 'Failed to update client'], 500);
+        }
     }
 
     /**
@@ -113,6 +150,29 @@ class ClientController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        // Make sure the user is authenticated
+        if (!$user = auth()->user()) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Find the client by ID
+        $client = Clients::where('user_id', $user->id)->where('id', $id)->first();
+
+        // Check if the client exists
+        if (!$client) {
+            return response()->json(['error' => 'Client not found'], 404);
+        }
+
+        // Check if the client belongs to the authenticated user
+        if ($client->user_id !== $user->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        // Delete the client
+        if ($client->delete()) {
+            return response()->json(['message' => 'Client deleted successfully'], 200);
+        } else {
+            return response()->json(['error' => 'Failed to delete client'], 500);
+        }
     }
 }
