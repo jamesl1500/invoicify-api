@@ -10,6 +10,13 @@ use App\Models\Payments;
 use App\Models\User;
 use App\Models\Invoices_Items;
 
+use App\Notifications\InvoiceCreatedNotification;
+use App\Mail\InvoiceCreatedNotification as InvoiceCreatedMail;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
+
 class InvoiceController extends Controller
 {
     /**
@@ -45,7 +52,7 @@ class InvoiceController extends Controller
 
         // Check if the client exists
         $client = Clients::find($validatedData['clientId']);
-        
+
         if (!$client) {
             return response()->json(['error' => 'Client not found'], 404);
         }
@@ -59,13 +66,13 @@ class InvoiceController extends Controller
         $invoice->user_id = $request->user()->id;
         $invoice->client_id = $validatedData['clientId'];
         $invoice->invoice_number = $validatedData['invoiceNumber'];
-        $invoice->invoice_date = $validatedData['invoiceDate'];
+        $invoice->issue_date = $validatedData['invoiceDate'];
         $invoice->due_date = $validatedData['dueDate'];
         $invoice->sub_total = $validatedData['subtotal'];
         $invoice->tax_rate = $validatedData['taxRate'];
         $invoice->tax_amount = $validatedData['tax'];
         $invoice->total_amount = $validatedData['total'];
-        $invoice->status = 'draft'; // Default status
+        $invoice->status = 'pending'; // Default status
 
         // Save invoice
         $invoice->save();
@@ -83,8 +90,51 @@ class InvoiceController extends Controller
             $invoiceItem->save();
         }
 
+        // Create PDF
+        $pdf = $this->generatePDF($invoice, $client);
+
+        // Send notification to the client
+        //$client->notify(new InvoiceCreatedNotification($invoice, $client));
+
+        // Send email to the client
+        Mail::to($client->email)->send(new InvoiceCreatedMail($invoice, $client, $pdf));
+
         // Return the created invoice
         return response()->json(['message' => 'Invoice created successfully', 'invoice' => $invoice], 201);
+    }
+
+    /**
+     * Generate PDF
+     */
+    public function generatePDF(Invoices $invoice, Clients $client)
+    {
+        set_time_limit(300);
+        Log::info('PDF Generation started');
+        $start = microtime(true);
+
+        // Create a new PDF and save it
+        $pdf = Pdf::loadView('invoices.style1', [
+            'invoice' => $invoice,
+            'client' => $client,
+        ]);
+
+        // Set the PDF filename
+        $pdf->setPaper('A4', 'portrait');
+        $pdf->setOptions(['defaultFont' => 'sans-serif']);
+
+        // Save the PDF to a file
+        $pdfPath = storage_path('app/public/invoices/' . $invoice->id . '.pdf');
+        $pdf->save($pdfPath);
+
+        // Update the invoice with the PDF URL
+        $invoice->pdf_url = $invoice->id . '.pdf';
+        $invoice->save();
+
+        // Return the PDF file as json
+        $end = microtime(true);
+        $executionTime = ($end - $start) * 1000; // Convert to milliseconds
+        Log::info('PDF Generation completed' . $executionTime . 'ms');  
+        return response()->json(['pdf_url' => $invoice->pdf_url], 200);
     }
 
     /**

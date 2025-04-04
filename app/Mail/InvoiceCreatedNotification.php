@@ -7,18 +7,35 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Mail\Mailables\Address;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Queue\SerializesModels;
+
+use App\Models\Invoices;
+use App\Models\Clients;
 
 class InvoiceCreatedNotification extends Mailable
 {
     use Queueable, SerializesModels;
 
     /**
+     * The invoice instance.
+     */
+    public $invoice;
+
+    /**
+     * The client instance.
+     */
+    public $client;
+
+    /**
      * Create a new message instance.
      */
-    public function __construct()
+    public function __construct(Invoices $invoice, Clients $client)
     {
-        //
+        // Store the invoice and client data
+        $this->invoice = $invoice;
+        $this->client = $client;
     }
 
     /**
@@ -27,7 +44,10 @@ class InvoiceCreatedNotification extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Invoice Created Notification',
+            from: new Address(
+                "hello@invoicify.com", "Invoicify",
+            ),
+            subject: 'You have a new invoice',
         );
     }
 
@@ -37,7 +57,11 @@ class InvoiceCreatedNotification extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'view.name',
+            view: 'emails.InvoiceCreatedEmail',
+            with: [
+                'invoice' => $this->invoice,
+                'client' => $this->client,
+            ],
         );
     }
 
@@ -48,6 +72,11 @@ class InvoiceCreatedNotification extends Mailable
      */
     public function attachments(): array
     {
-        return [];
+        return [
+            // Attach the invoice PDF
+            Attachment::fromPath(storage_path('app/public/invoices/' . $this->invoice->pdf_url))
+                ->as('invoice.pdf')
+                ->withMime('application/pdf'),
+        ];
     }
 }
