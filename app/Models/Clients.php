@@ -3,46 +3,37 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticable;
 
 use App\Models\User;
 use App\Models\Invoices;
 use App\Models\Payments;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Auth;
+use Laravel\Sanctum\HasApiTokens;
 
-class Clients extends Model
+class Clients extends Authenticable
 {
+    use HasApiTokens, Notifiable;
+
     //
     protected $table = 'clients';
+    protected $guard = 'client';
 
     protected $fillable = [
         'id',
         'user_id',
         'name',
         'email',
+        'password',
         'phone',
         'address'
     ];
 
-    public $incrementing = false;
-    protected $keyType = 'string';
-
-    protected $casts = [
-        'id' => 'string',
+    protected $hidden = [
+        'password',
+        'remember_token',
     ];
-
-    /**
-     * boot()
-     * ------
-     * This method is called when the model is being created
-     */
-    protected static function boot()
-    {
-        parent::boot();
-
-        // Generate a UUID for the primary key
-        static::creating(function ($model) {
-            $model->{$model->getKeyName()} = (string) \Illuminate\Support\Str::uuid();
-        });
-    }
 
     /**
      * user()

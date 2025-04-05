@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\ClientOnboardNotification;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Mail;
 
 use App\Models\Clients;
 
@@ -49,6 +52,18 @@ class ClientController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
+        // Check if the user already has a client with the same email
+        $existingClient = Clients::where('user_id', $request->user()->id)
+            ->where('email', $validatedData['email'])
+            ->first();
+
+        if ($existingClient) {
+            return response()->json(['error' => 'Client with this email already exists'], 409);
+        }
+
+        // Create an onboarding token for the client
+        $onboardingToken = Str::random(32);
+
         // Create a new client
         $client = new Clients();
 
@@ -58,9 +73,17 @@ class ClientController extends Controller
         $client->phone = $validatedData['phone'];
         $client->address = $validatedData['address'];
 
+        // Set the onboarding token
+        $client->onboard_token = $onboardingToken;
+        $client->onboard_status = 'pending';
+        $client->onboard_token_expires_at = now()->addDays(7);
+
+        // Email the client with the onboarding link
+        Mail::to($client->email)->send(new ClientOnboardNotification($request->user(), $client));
+
         // Save the client to the database
         if ($client->save()) {
-            return response()->json(['message' => 'Client created successfully', 'client' => $client], 201);
+            return response()->json(['message' => 'Client created successfully! An email was sent so they can onboard!', 'client' => $client], 201);
         } else {
             return response()->json(['error' => 'Failed to create client'], 500);
         }

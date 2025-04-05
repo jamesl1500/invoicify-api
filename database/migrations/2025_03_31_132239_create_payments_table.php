@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('payments', function (Blueprint $table) {
             $table->uuid("id")->primary();
             $table->uuid('invoice_id');
-            $table->uuid('client_id');
+            $table->foreignId('client_id');
             $table->foreignId('user_id');
             $table->enum('payment_method', ['credit_card', 'bank_transfer', 'paypal']);
             $table->decimal('amount', 15, 2);

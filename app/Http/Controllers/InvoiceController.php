@@ -34,7 +34,7 @@ class InvoiceController extends Controller
     {
         // Validate the request data
         $validatedData = $request->validate([
-            'clientId' => 'required|uuid',
+            'clientId' => 'required|exists:clients,id',
             'invoiceNumber' => 'required|string|max:255',
             'invoiceDate' => 'required|date',
             'dueDate' => 'required|date',
@@ -43,6 +43,8 @@ class InvoiceController extends Controller
             'tax' => 'required|numeric',
             'taxRate' => 'required|numeric',
             'total' => 'required|numeric',
+            'notes' => 'nullable|string',
+            'terms' => 'nullable|string',
         ]);
 
         // Make sure the user is authenticated
@@ -72,6 +74,8 @@ class InvoiceController extends Controller
         $invoice->tax_rate = $validatedData['taxRate'];
         $invoice->tax_amount = $validatedData['tax'];
         $invoice->total_amount = $validatedData['total'];
+        $invoice->notes = $request->input('notes', null);
+        $invoice->terms = $request->input('terms', null);
         $invoice->status = 'pending'; // Default status
 
         // Save invoice
@@ -142,7 +146,35 @@ class InvoiceController extends Controller
      */
     public function show(string $id)
     {
-        //
+        // Make sure the user is authenticated
+        if (!$user = auth()->user()) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Find the invoice by ID
+        $invoice = Invoices::where('user_id', $user->id)->where('id', $id)->first();
+
+        // Check if the invoice exists
+        if (!$invoice) {
+            return response()->json(['error' => 'Invoice not found'], 404);
+        }
+
+        // Check if the invoice belongs to the authenticated user
+        if ($invoice->user_id !== $user->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        // Get the invoice items
+        $items = Invoices_Items::where('invoice_id', $invoice->id)->get();
+
+        // Get the client
+        $client = Clients::where('id', $invoice->client_id)->first();
+
+        // Get the payments
+        $payments = Payments::where('invoice_id', $invoice->id)->get();
+
+        // Return the invoice as a JSON response
+        return response()->json(['invoice' => $invoice, 'items' => $items, 'client' => $client, 'payments' => $payments], 200);
     }
 
     /**
