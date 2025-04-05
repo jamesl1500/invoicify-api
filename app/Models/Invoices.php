@@ -87,4 +87,14 @@ class Invoices extends Model
     {
         return $this->hasMany(Invoices_Items::class, 'invoice_id', 'id');
     }
+
+    /**
+     * notifications()
+     * ---------------
+     * This invoice has many notifications
+     */
+    public function notifications()
+    {
+        return $this->hasMany(Notifications::class, 'invoice_id', 'id');
+    }
 }

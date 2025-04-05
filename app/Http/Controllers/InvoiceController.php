@@ -173,8 +173,11 @@ class InvoiceController extends Controller
         // Get the payments
         $payments = Payments::where('invoice_id', $invoice->id)->get();
 
+        // Get the notifications for the invoice
+        $notifications = $invoice->notifications()->get(); 
+
         // Return the invoice as a JSON response
-        return response()->json(['invoice' => $invoice, 'items' => $items, 'client' => $client, 'payments' => $payments], 200);
+        return response()->json(['invoice' => $invoice, 'items' => $items, 'client' => $client, 'payments' => $payments, 'notifications' => $notifications], 200);
     }
 
     /**
