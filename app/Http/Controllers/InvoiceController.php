@@ -27,6 +27,21 @@ class InvoiceController extends Controller
     public function index()
     {
         //
+        // Make sure the user is authenticated
+        if (!$user = auth()->user()) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Get the invoices for the authenticated user
+        $invoices = Invoices::where('user_id', $user->id)->with(['client', 'user'])->get();
+
+        // Check if the user has any invoices
+        if ($invoices->isEmpty()) {
+            return response()->json(['message' => 'No invoices found', 'invoices' => array()], 404);
+        }
+
+        // Return the invoices as a JSON response
+        return response()->json(['invoices' => $invoices], 200);
     }
 
     /**
@@ -102,9 +117,6 @@ class InvoiceController extends Controller
         // Send notification to the client
         $client->notify(new InvoiceCreatedNotification($invoice, $client));
 
-        // Send email to the client
-        Mail::to($client->email)->send(new InvoiceCreatedMail($invoice, $client, $pdf));
-
         // Return the created invoice
         return response()->json(['message' => 'Invoice created successfully', 'invoice' => $invoice], 201);
     }
@@ -154,7 +166,7 @@ class InvoiceController extends Controller
         }
 
         // Find the invoice by ID
-        $invoice = Invoices::where('user_id', $user->id)->where('id', $id)->first();
+        $invoice = Invoices::where('id', $id)->first();
 
         // Check if the invoice exists
         if (!$invoice) {
@@ -162,7 +174,7 @@ class InvoiceController extends Controller
         }
 
         // Check if the invoice belongs to the authenticated user
-        if ($invoice->user_id !== $user->id) {
+        if ($invoice->user_id !== $user->id && $invoice->client_id !== $user->id) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -293,6 +305,37 @@ class InvoiceController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        // Make sure the user is authenticated
+        if (!$user = auth()->user()) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Find the invoice by ID
+        $invoice = Invoices::where('user_id', $user->id)->where('id', $id)->first();
+
+        // Check if the invoice exists
+        if (!$invoice) {
+            return response()->json(['error' => 'Invoice not found'], 404);
+        }
+
+        // Check if the invoice belongs to the authenticated user
+        if ($invoice->user_id !== $user->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        // Delete the invoice
+        $invoice->delete();
+
+        // Delete the invoice items
+        Invoices_Items::where('invoice_id', $invoice->id)->delete();
+
+        // Delete the invoice payments
+        Payments::where('invoice_id', $invoice->id)->delete();
+
+        // Delete the invoice notifications
+        Invoice_Activity::where('invoice_id', $invoice->id)->delete();
+
+        // Return success response
+        return response()->json(['message' => 'Invoice deleted successfully'], 200);
     }
 }

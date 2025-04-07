@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('invoices__items', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('invoice_id');
+            $table->string('item');
             $table->string('description');
             $table->integer('quantity')->default(1);
             $table->decimal('unit_price', 15, 2);
