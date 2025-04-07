@@ -2,34 +2,29 @@
 
 namespace App\Notifications;
 
-use App\Models\Invoices;
-use App\Models\Clients;
-
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-use App\Mail\InvoiceCreatedNotification as InvoiceCreatedMail;
-
-class InvoiceCreatedNotification extends Notification
+class InvoiceUpdatedNotification extends Notification
 {
     use Queueable;
 
     /**
      * The invoice instance.
      */
-    public Invoices $invoice;
+    public $invoice;
 
     /**
      * The client instance.
      */
-    public Clients $client;
+    public $client;
 
     /**
      * Create a new notification instance.
      */
-    public function __construct(Invoices $invoice, Clients $client)
+    public function __construct($invoice, $client)
     {
         // Store the invoice and client data
         $this->invoice = $invoice;
@@ -47,17 +42,15 @@ class InvoiceCreatedNotification extends Notification
     }
 
     /**
-     * Get thew database representation of the notification.
-     * 
+     * Get the database representation of the notification.
+     *
      * @return array<string, mixed>
-     * 
      */
     public function toDatabase(object $notifiable): array
     {
         return [
+            'message' => 'Your invoice has been updated.',
             'invoice_id' => $this->invoice->id,
-            'client_id' => $this->client->id,
-            'message' => 'You have a new invoice',
         ];
     }
 
@@ -67,9 +60,9 @@ class InvoiceCreatedNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('You have a new invoice')
-            ->line('Dear ' . $this->client->name . ',')
-            ->line('An invoice has been created for you.')
+            ->subject('Invoice Updated')
+            ->greeting('Hello ' . $this->client->name)
+            ->line('Your invoice has been updated.')
             ->action('View Invoice', env('FRONTEND_URL') . '/client/invoices/view/' . $this->invoice->id)
             ->line('Thank you for using our application!');
     }

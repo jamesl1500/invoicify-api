@@ -11,7 +11,9 @@ use App\Models\User;
 use App\Models\Invoices_Items;
 
 use App\Notifications\InvoiceCreatedNotification;
+use App\Notifications\InvoiceUpdatedNotification;
 use App\Mail\InvoiceCreatedNotification as InvoiceCreatedMail;
+use App\Models\Invoice_Activity;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -98,7 +100,7 @@ class InvoiceController extends Controller
         $pdf = $this->generatePDF($invoice, $client);
 
         // Send notification to the client
-        //$client->notify(new InvoiceCreatedNotification($invoice, $client));
+        $client->notify(new InvoiceCreatedNotification($invoice, $client));
 
         // Send email to the client
         Mail::to($client->email)->send(new InvoiceCreatedMail($invoice, $client, $pdf));
@@ -177,7 +179,7 @@ class InvoiceController extends Controller
         $payments = Payments::where('invoice_id', $invoice->id)->get();
 
         // Get the notifications for the invoice
-        $notifications = $invoice->notifications()->get(); 
+        $notifications = $invoice->notifications()->get();
 
         // Return the invoice as a JSON response
         return response()->json(['invoice' => $invoice, 'user' => $user, 'items' => $items, 'client' => $client, 'payments' => $payments, 'notifications' => $notifications], 200);
@@ -189,6 +191,101 @@ class InvoiceController extends Controller
     public function update(Request $request, string $id)
     {
         //
+        // Validate the request data
+        $validatedData = $request->validate([
+            'clientId' => 'required|exists:clients,id',
+            'invoiceNumber' => 'required|string|max:255',
+            'invoiceDate' => 'required|date',
+            'dueDate' => 'required|date',
+            'items' => 'required|array',
+            'subtotal' => 'required|numeric',
+            'tax' => 'required|numeric',
+            'taxRate' => 'required|numeric',
+            'total' => 'required|numeric',
+            'notes' => 'nullable|string',
+            'terms' => 'nullable|string',
+        ]);
+
+        // Make sure the user is authenticated
+        if (!$request->user()) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Check if the client exists
+        $client = Clients::find($validatedData['clientId']);
+        if (!$client) {
+            return response()->json(['error' => 'Client not found'], 404);
+        }
+
+        // Check if the user is authorized to create an invoice for this client
+        if ($client->user_id !== $request->user()->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        // Find the invoice by ID
+        $invoice = Invoices::where('user_id', $request->user()->id)->where('id', $id)->first();
+
+        // Check if the invoice exists
+        if (!$invoice) {
+            return response()->json(['error' => 'Invoice not found'], 404);
+        }
+
+        // Check if the invoice belongs to the authenticated user
+        if ($invoice->user_id !== $request->user()->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        // Update the invoice
+        $invoice->client_id = $validatedData['clientId'];
+        $invoice->invoice_number = $validatedData['invoiceNumber'];
+        $invoice->issue_date = $validatedData['invoiceDate'];
+        $invoice->due_date = $validatedData['dueDate'];
+        $invoice->sub_total = $validatedData['subtotal'];
+        $invoice->tax_rate = $validatedData['taxRate'];
+        $invoice->total_amount = $validatedData['total'];
+        $invoice->tax_amount = $validatedData['tax'];
+        $invoice->notes = $request->input('notes', null);
+        $invoice->terms = $request->input('terms', null);
+        $invoice->status = 'pending'; // Default status
+
+        // Save the invoice
+        $invoice->save();
+
+        // Loop through the items and add them to the invoice
+        // First, delete existing items
+        Invoices_Items::where('invoice_id', $invoice->id)->delete();
+
+        // Then, add new items
+        foreach ($validatedData['items'] as $item) {
+            $invoiceItem = new Invoices_Items();
+            $invoiceItem->invoice_id = $invoice->id;
+            $invoiceItem->item = $item['item'];
+            $invoiceItem->description = $item['description'];
+            $invoiceItem->quantity = $item['quantity'];
+            $invoiceItem->unit_price = $item['unit_price'];
+
+            // Save the invoice item
+            $invoiceItem->save();
+        }
+
+        // If client is updated, send email to the client
+        if ($invoice->client_id !== $validatedData['clientId']) {
+            Mail::to($client->email)->send(new InvoiceCreatedMail($invoice, $client));
+        }
+
+        // Notify the client that the invoice has been updated
+        $client->notify(new InvoiceUpdatedNotification($invoice, $client));
+
+        // Add invoice update activity
+        Invoice_Activity::create([
+            'invoice_id' => $invoice->id,
+            'action' => 'Invoice updated',
+            'description' => 'Invoice updated by user',
+            'user_id' => $request->user()->id,
+        ]);
+
+        // Return the updated invoice
+        return response()->json(['message' => 'Invoice updated successfully', 'invoice' => $invoice], 200);
     }
 
     /**

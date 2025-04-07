@@ -13,23 +13,11 @@ return new class extends Migration
     {
         Schema::create('notifications', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignId('user_id');
-            $table->uuid('invoice_id');
             $table->string('type');
-            $table->text('message');
-            $table->enum('status', ['unread', 'read'])->default('unread');
-            $table->timestamp('sent_at')->useCurrent();
+            $table->morphs('notifiable');
+            $table->text('data');
+            $table->timestamp('read_at')->nullable();
             $table->timestamps();
-
-            $table->foreign('user_id')
-                ->references('id')
-                ->on('users')
-                ->onDelete('cascade');
-            
-            $table->foreign('invoice_id')
-                ->references('id')
-                ->on('invoices')
-                ->onDelete('cascade');
         });
     }
 

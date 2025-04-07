@@ -32,6 +32,13 @@ Route::post('/login', [AuthController::class, 'authenticate']);
 Route::post('/register', [AuthController::class, 'register']);
 
 /**
+ * Password Reset Route
+ */
+Route::post('/password-reset', [AuthController::class, 'passwordReset']);
+Route::post('/password-reset/verify', [AuthController::class, 'verifyPasswordReset']);
+Route::post('/password-reset/update', [AuthController::class, 'updatePassword']);
+
+/**
  * Logout Route
  */
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
@@ -70,7 +77,7 @@ Route::prefix('client')->group(function () {
     Route::get('/profile', [ClientProfileController::class, 'index'])->middleware('auth:client');
     Route::get('/settings', [ClientSettingsController::class, 'index'])->middleware('auth:client');
 
-
+    Route::post('invoices/{id}/pay', [ClientInvoicesController::class, 'pay'])->middleware('auth:client');
 });
 
 /**

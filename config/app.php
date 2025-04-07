@@ -56,6 +56,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Frontend URL
+    |--------------------------------------------------------------------------
+    |
+    | This is the frontend URL used by the application. It is used for generating
+    | URLs for the frontend application. You should set this to the root of
+    | the frontend application so that it's available within the application.
+    |
+    */
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:3000'),
+    
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

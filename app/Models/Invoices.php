@@ -55,7 +55,7 @@ class Invoices extends Model
      */
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     /**
@@ -95,6 +95,6 @@ class Invoices extends Model
      */
     public function notifications()
     {
-        return $this->hasMany(Notifications::class, 'invoice_id', 'id');
+        return $this->hasMany(Invoice_Activity::class, 'invoice_id', 'id');
     }
 }
