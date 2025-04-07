@@ -26,7 +26,7 @@ class ClientController extends Controller
 
         // Check if the user has any clients
         if ($clients->isEmpty()) {
-            return response()->json(['message' => 'No clients found'], 404);
+            return response()->json(['message' => 'No clients found', 'clients' => array()], 404);
         }
 
         // Return the clients as a JSON response

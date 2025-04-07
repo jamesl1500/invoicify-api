@@ -89,6 +89,11 @@ Route::prefix('stripe')->group(function () {
 
     Route::post('/payment-method', [StripeController::class, 'attachPaymentMethod'])->middleware('auth:sanctum');
     Route::delete('/payment-method/{payment_method_id}', [StripeController::class, 'detachPaymentMethod'])->middleware('auth:sanctum');
+
+    Route::post('/user/onboarding', [StripeController::class, 'userOnboarding'])->middleware('auth:sanctum');
+    Route::get('/user/onboarding/verify', [StripeController::class, 'userOnboardingVerify'])->middleware('auth:sanctum');
+
+    Route::post('/client/onboarding', [StripeController::class, 'clientOnboarding'])->middleware('auth:client');
 }); 
 
 Route::middleware('auth:sanctum')->group(function () {

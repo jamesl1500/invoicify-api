@@ -137,4 +137,97 @@ class StripeController extends Controller
         // Return a success message
         return response()->json(['message' => 'Payment method detached successfully'], 200);
     }
+
+    /**
+     * userOnboard
+     * 
+     * This method is used to onboard a user to Stripe
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     * @throws \Stripe\Exception\ApiErrorException
+     */
+    public function userOnboarding(Request $request)
+    {
+        $user = $request->user();
+
+        // Setup stripe
+        Stripe::setApiKey(env('STRIPE_SECRET'));
+
+        // If the user already has a stripe account, return the account id
+        if ($user->stripe_customer_id) {
+            return response()->json(['account_id' => $user->stripe_customer_id], 200);
+        }
+
+        // Create a new stripe account
+        $account = \Stripe\Account::create([
+            'type' => 'express',
+            'country' => 'US',
+            'email' => $user->email,
+        ]);
+
+        // Save the account id to the user
+        $user->stripe_customer_id = $account->id;
+        $user->save();
+
+        // Create an account link for the user to complete onboarding
+        $accountLink = \Stripe\AccountLink::create([
+            'account' => $account->id,
+            'refresh_url' => env('FRONTEND_URL') . '/auth/signup/refresh',
+            'return_url' => env('FRONTEND_URL') . '/auth/signup/complete',
+            'type' => 'account_onboarding',
+        ]);
+
+        // Return the account link
+        return response()->json([
+            'url' => $accountLink->url,
+            'account_id' => $account->id,
+        ], 200);
+    }
+
+    /**
+     * userOnboardingVerify
+     * 
+     * This method is used to verify the user onboarding
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function userOnboardingVerify(Request $request)
+    {
+        $user = $request->user();
+
+        // Validate the request
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Check if the user has a stripe account
+        if (!$user->stripe_customer_id) {
+            return response()->json(['error' => 'User does not have a stripe account'], 404);
+        }
+
+        // Set the Stripe API key
+        Stripe::setApiKey(env('STRIPE_SECRET'));
+
+        // Retrieve the account
+        $account = \Stripe\Account::retrieve($user->stripe_customer_id);
+
+        // Check if the account is fully onboarded
+        if($account->details_submitted && $account->charges_enabled) {
+            return response()->json(['onboarded' => true, 'account' => $account], 200);
+        }
+        // Check if the account is not fully onboarded
+        if(!$account->details_submitted || !$account->charges_enabled) {
+            // Return the link to the user to complete onboarding
+            $accountLink = \Stripe\AccountLink::create([
+                'account' => $account->id,
+                'refresh_url' => env('FRONTEND_URL') . '/auth/signup/refresh',
+                'return_url' => env('FRONTEND_URL') . '/auth/signup/complete',
+                'type' => 'account_onboarding',
+            ]);
+            
+            return response()->json(['onboarded' => false, 'account' => $account, 'url' => $accountLink], 200);
+        }
+    }
 }
