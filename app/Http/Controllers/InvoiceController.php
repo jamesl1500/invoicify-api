@@ -164,6 +164,9 @@ class InvoiceController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
+        // Get user info
+        $user = User::where('id', $invoice->user_id)->first();
+
         // Get the invoice items
         $items = Invoices_Items::where('invoice_id', $invoice->id)->get();
 
@@ -177,7 +180,7 @@ class InvoiceController extends Controller
         $notifications = $invoice->notifications()->get(); 
 
         // Return the invoice as a JSON response
-        return response()->json(['invoice' => $invoice, 'items' => $items, 'client' => $client, 'payments' => $payments, 'notifications' => $notifications], 200);
+        return response()->json(['invoice' => $invoice, 'user' => $user, 'items' => $items, 'client' => $client, 'payments' => $payments, 'notifications' => $notifications], 200);
     }
 
     /**

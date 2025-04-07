@@ -19,6 +19,7 @@ use App\Http\Controllers\client\ClientPaymentsController;
 use App\Http\Controllers\client\ClientProfileController;
 use App\Http\Controllers\client\ClientSettingsController;
 
+use App\Http\Controllers\StripeController;
 
 /**
  * Login Route
@@ -68,7 +69,20 @@ Route::prefix('client')->group(function () {
     Route::get('/payments', [ClientPaymentsController::class, 'index'])->middleware('auth:client');
     Route::get('/profile', [ClientProfileController::class, 'index'])->middleware('auth:client');
     Route::get('/settings', [ClientSettingsController::class, 'index'])->middleware('auth:client');
+
+
 });
+
+/**
+ * Stripe Routes 
+*/
+Route::prefix('stripe')->group(function () {
+    Route::get('/setup-intent', [StripeController::class, 'createSetupIntent'])->middleware('auth:sanctum');
+    Route::get('/saved-cards', [StripeController::class, 'getSavedCards'])->middleware('auth:sanctum');
+
+    Route::post('/payment-method', [StripeController::class, 'attachPaymentMethod'])->middleware('auth:sanctum');
+    Route::delete('/payment-method/{payment_method_id}', [StripeController::class, 'detachPaymentMethod'])->middleware('auth:sanctum');
+}); 
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('clients', ClientController::class);
