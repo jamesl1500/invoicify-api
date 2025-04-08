@@ -89,6 +89,16 @@ class Invoices extends Model
     }
 
     /**
+     * activities()
+     * ------------
+     * This invoice has many activities
+     */
+    public function activities()
+    {
+        return $this->hasMany(Invoice_Activity::class, 'invoice_id', 'id');
+    }
+
+    /**
      * notifications()
      * ---------------
      * This invoice has many notifications

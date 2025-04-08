@@ -12,6 +12,8 @@ use App\Models\Clients;
 use App\Models\Payments;
 use App\Models\Invoices;
 
+use \App\Notifications\PaymentMadeNotification;
+
 class ClientInvoicesController extends Controller
 {
     // Get all invoices
@@ -104,9 +106,33 @@ class ClientInvoicesController extends Controller
         $invoice->status = 'paid';
         $invoice->save();
 
-        // Record the payment in the database (if applicable)
-        $payment = new Payment();       
+        // Record the payment
+        $payment = new Payments();
+        $payment->user_id = $user->user->id;
+        $payment->invoice_id = $invoice->id;
+        $payment->amount = $totalAmount / 100; // Convert to dollars
+        $payment->client_id = $invoice->client_id;
+        $payment->payment_method = $validatedData['payment_method'];
+        $payment->transaction_id = $paymentIntent->id;
+        $payment->status = 'completed';
+        $payment->payment_date = now();
+        $payment->save();
 
-        return response()->json(['message' => 'Payment processed successfully'], 200);
+        // Add invoice activity
+        $invoice->activities()->create([
+            'invoice_id' => $invoice->id,
+            'user_id' => $user->user->id,
+            'action' => 'Transaction',
+            'description' => 'Invoice paid successfully',
+        ]);
+
+        // Send notification to invoice owner
+        $invoice->user->notify(new PaymentMadeNotification($invoice, $invoice->client, $payment));
+        
+        // Return the payment intent details
+        return response()->json([
+            'payment_intent' => $paymentIntent,
+            'message' => 'Payment processed successfully',
+        ], 200);
     }
 }
