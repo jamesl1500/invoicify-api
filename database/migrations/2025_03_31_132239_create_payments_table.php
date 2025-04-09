@@ -16,10 +16,10 @@ return new class extends Migration
             $table->uuid('invoice_id');
             $table->foreignId('client_id');
             $table->foreignId('user_id');
-            $table->enum('payment_method', ['credit_card', 'bank_transfer', 'paypal']);
+            $table->string('payment_method');
             $table->decimal('amount', 15, 2);
             $table->string('transaction_id')->unique();
-            $table->enum('status', ['pending', 'completed', 'failed'])->default('pending');
+            $table->enum('status', ['pending', 'completed', 'refunded', 'failed'])->default('pending');
             $table->timestamp('payment_date')->useCurrent();
             $table->timestamps();
 

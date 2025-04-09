@@ -98,8 +98,13 @@ Route::prefix('stripe')->group(function () {
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('clients', ClientController::class);
+    
+    // Invoices
     Route::apiResource('invoices', InvoiceController::class);
+
+    // Payments
     Route::apiResource('payments', PaymentController::class);
+    Route::post('/payments/{id}/refund', [PaymentController::class, 'refund']);
 
     Route::get('/dashboard', [DashboardController::class, 'index']);
 });
