@@ -40,8 +40,47 @@ class InvoiceController extends Controller
             return response()->json(['message' => 'No invoices found', 'invoices' => array()], 404);
         }
 
+        // Lets get overdue invoices
+        $overdueInvoices = Invoices::where('user_id', $user->id)
+            ->where('due_date', '<', now())
+            ->where('status', '!=', 'paid')
+            ->with(['client', 'user'])
+            ->get();
+        $overdueInvoicesAmount = 0;
+
+        foreach ($overdueInvoices as $invoice) {
+            $overdueInvoicesAmount += $invoice->total_amount;
+        }
+
+        // Get paid invoices amout
+        $paidInvoices = Invoices::where('user_id', $user->id)
+            ->where('status', 'paid')
+            ->with(['client', 'user'])
+            ->get();
+        $paidInvoicesAmount = 0;
+
+        foreach ($paidInvoices as $invoice) {
+            $paidInvoicesAmount += $invoice->total_amount;
+        }
+
+        // Get unpaid invoices amount
+        $unpaidInvoices = Invoices::where('user_id', $user->id)
+            ->where('status', '!=', 'paid')
+            ->with(['client', 'user'])
+            ->get();
+
+        $unpaidInvoicesAmount = 0;
+
+        foreach ($unpaidInvoices as $invoice) {
+            $unpaidInvoicesAmount += $invoice->total_amount;
+        }
+
         // Return the invoices as a JSON response
-        return response()->json(['invoices' => $invoices], 200);
+        return response()->json(['invoices' => $invoices, 
+        'numbers' => array('paid' => $paidInvoicesAmount, 'unpaid' => $unpaidInvoicesAmount, 'overdue' => $overdueInvoicesAmount),
+        'overdueInvoices' => $overdueInvoices,
+        'paidInvoices' => $paidInvoices,
+        'unpaidInvoices' => $unpaidInvoices], 200);
     }
 
     /**
