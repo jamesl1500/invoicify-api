@@ -9,6 +9,7 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\PaymentController;
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\SettingsController;
 
 use App\Models\PersonalAccessToken;
 
@@ -95,6 +96,17 @@ Route::prefix('stripe')->group(function () {
 
     Route::post('/client/onboarding', [StripeController::class, 'clientOnboarding'])->middleware('auth:client');
 }); 
+
+/**
+ * Settings Route
+ */
+Route::get('/settings/basicInformation', [SettingsController::class, 'getUserBasicInfo'])->middleware('auth:sanctum');
+Route::post('/settings/basicInformation', [SettingsController::class, 'updateUserBasicInfo'])->middleware('auth:sanctum');
+
+Route::get('/settings/companyInformation', [SettingsController::class, 'getCompanyInfo'])->middleware('auth:sanctum');
+Route::post('/settings/companyInformation', [SettingsController::class, 'updateCompanyInfo'])->middleware('auth:sanctum');
+
+Route::post('/settings/changePassword', [SettingsController::class, 'changePassword'])->middleware('auth:sanctum');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('clients', ClientController::class);
