@@ -65,4 +65,50 @@ class SettingsController extends Controller
 
         return response()->json(['message' => 'Password changed successfully']);
     }
+
+    // Get users business information
+    public function getCompanyInfo(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
+        // Assuming the user model has 'business_name', 'business_address', and 'business_phone' attributes
+        return response()->json([
+            'company_name' => $user->company_name,
+            'company_address' => $user->company_address,
+            'company_phone_number' => $user->company_phone_number,
+            'company_email' => $user->company_email,
+            'company_logo' => $user->company_logo,
+        ]);
+    }
+
+    // Process business information update
+    public function updateCompanyInfo(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
+        $validatedData = $request->validate([
+            'company_name' => 'required|string|max:255',
+            'company_address' => 'required|string|max:255',
+            'company_phone_number' => 'nullable|string|max:15',
+            'company_email' => 'nullable|email|max:255',
+            'company_logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        if ($request->hasFile('company_logo')) {
+            $logoPath = $request->file('company_logo')->store('logos', 'public');
+            $validatedData['company_logo'] = $logoPath;
+        }
+
+        $user->update($validatedData);
+
+        return response()->json(['message' => 'Company information updated successfully']);
+    }
 }
