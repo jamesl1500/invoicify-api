@@ -34,6 +34,7 @@ class ClientAuthController extends Controller
                 'email' => $client->email,
                 'phone' => $client->phone,
                 'address' => $client->address,
+                'userData' => $client->user,
             ],
         ], 200);
     }

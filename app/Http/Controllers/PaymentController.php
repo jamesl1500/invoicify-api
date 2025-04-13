@@ -57,8 +57,17 @@ class PaymentController extends Controller
             return response()->json(['error' => 'Payment not found'], 404);
         }
 
+        // Get stripe payment info using payment id
+        $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET'));
+
+        try {
+            $stripePayment = $stripe->paymentIntents->retrieve($payment->transaction_id, []);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to retrieve payment from Stripe: ' . $e->getMessage()], 500);
+        }
+
         // Return the payment as a JSON response
-        return response()->json(['payment' => $payment], 200);
+        return response()->json(['payment' => $payment, 'stripe' => $stripePayment], 200);
     }
 
     /**
