@@ -74,7 +74,10 @@ Route::prefix('client')->group(function () {
 
     Route::get('/dashboard', [ClientDashboardController::class, 'index'])->middleware('auth:client');
     Route::get('/invoices', [ClientInvoicesController::class, 'index'])->middleware('auth:client');
+
     Route::get('/payments', [ClientPaymentsController::class, 'index'])->middleware('auth:client');
+    Route::get('/payments/{id}', [ClientPaymentsController::class, 'show'])->middleware('auth:client');
+    
     Route::get('/profile', [ClientProfileController::class, 'index'])->middleware('auth:client');
     Route::get('/settings', [ClientSettingsController::class, 'index'])->middleware('auth:client');
 
