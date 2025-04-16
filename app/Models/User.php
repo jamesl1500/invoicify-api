@@ -11,6 +11,9 @@ use Laravel\Sanctum\HasApiTokens;
 
 use App\Notifications\ResetPasswordNotification;
 
+use App\Models\Clients;
+use App\Models\Conversations;
+
 
 class User extends Authenticatable
 {
@@ -60,6 +63,14 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Get the conversations for the user.
+     */
+    public function conversations()
+    {
+        return $this->hasMany(Conversations::class, 'user_id');
     }
 
     /**

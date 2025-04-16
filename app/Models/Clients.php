@@ -12,6 +12,8 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Sanctum\HasApiTokens;
 
+use App\Models\Conversations;
+
 class Clients extends Authenticable
 {
     use HasApiTokens, Notifiable;
@@ -34,6 +36,14 @@ class Clients extends Authenticable
         'password',
         'remember_token',
     ];
+
+    /**
+     * Conversations
+     */
+    public function conversations()
+    {
+        return $this->hasMany(Conversations::class, 'client_id');
+    }
 
     /**
      * user()

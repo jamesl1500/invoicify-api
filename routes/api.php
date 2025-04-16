@@ -22,6 +22,9 @@ use App\Http\Controllers\client\ClientSettingsController;
 
 use App\Http\Controllers\StripeController;
 
+use App\Http\Controllers\ConversationsController;
+use App\Http\Controllers\ConversationsMessagesController;
+
 /**
  * Login Route
  */
@@ -51,6 +54,13 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
+/** 
+ * Client Route
+ */
+Route::get('/client', function (Request $request) {
+    return $request->user();
+})->middleware('auth:sanctum');
+
 /**
  * Validate Token Route
  */
@@ -77,9 +87,12 @@ Route::prefix('client')->group(function () {
 
     Route::get('/payments', [ClientPaymentsController::class, 'index'])->middleware('auth:client');
     Route::get('/payments/{id}', [ClientPaymentsController::class, 'show'])->middleware('auth:client');
-    
+
     Route::get('/profile', [ClientProfileController::class, 'index'])->middleware('auth:client');
+
     Route::get('/settings', [ClientSettingsController::class, 'index'])->middleware('auth:client');
+    Route::put('/settings/updateBasicInformation', [ClientSettingsController::class, 'updateBasicInformation'])->middleware('auth:client');
+    Route::put('/settings/updatePassword', [ClientSettingsController::class, 'updatePassword'])->middleware('auth:client');
 
     Route::post('invoices/{id}/pay', [ClientInvoicesController::class, 'pay'])->middleware('auth:client');
 });
@@ -99,6 +112,13 @@ Route::prefix('stripe')->group(function () {
 
     Route::post('/client/onboarding', [StripeController::class, 'clientOnboarding'])->middleware('auth:client');
 }); 
+
+/**
+ *  Conversations / Conversation Messages routes
+ */
+Route::prefix('conversations')->group(function(){
+    Route::get('/', [ConversationsController::class, 'index'])->middleware('auth:sanctum');
+});
 
 /**
  * Settings Route
