@@ -132,6 +132,7 @@ Route::post('/settings/companyInformation', [SettingsController::class, 'updateC
 Route::post('/settings/changePassword', [SettingsController::class, 'changePassword'])->middleware('auth:sanctum');
 
 Route::middleware('auth:sanctum')->group(function () {
+    // Clients
     Route::apiResource('clients', ClientController::class);
     
     // Invoices
