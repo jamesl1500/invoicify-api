@@ -230,4 +230,121 @@ class StripeController extends Controller
             return response()->json(['onboarded' => false, 'account' => $account, 'url' => $accountLink], 200);
         }
     }
+
+    /**
+     * getStripeAccountDetails
+     * 
+     * This method is used to get the stripe account details
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getStripeAccountDetails(Request $request)
+    {
+        $user = $request->user();
+
+        // Validate the request
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Check if the user has a stripe account
+        if (!$user->stripe_customer_id) {
+            return response()->json(['error' => 'User does not have a stripe account'], 404);
+        }
+
+        // Set the Stripe API key
+        Stripe::setApiKey(env('STRIPE_SECRET'));
+
+        // Retrieve the account
+        $account = \Stripe\Account::retrieve($user->stripe_customer_id);
+
+        // Get balances
+        $balances = \Stripe\Balance::retrieve(['stripe_account' => $account->id]);
+
+        // Return the account details
+        return response()->json([
+            'business_type' => $account->business_type,
+            'email' => $account->email,
+            'payouts_enabled' => $account->payouts_enabled,
+            'details_submitted' => $account->details_submitted,
+            'external_accounts' => $account->external_accounts->data,
+            'balances' => $balances,
+        ], 200);
+    }
+
+    /**
+     * getStripePayouts
+     * 
+     * This method is used to get the stripe payouts
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getStripePayouts(Request $request)
+    {
+        $user = $request->user();
+
+        // Validate the request
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Check if the user has a stripe account
+        if (!$user->stripe_customer_id) {
+            return response()->json(['error' => 'User does not have a stripe account'], 404);
+        }
+
+        // Set the Stripe API key
+        Stripe::setApiKey(env('STRIPE_SECRET'));
+
+        // Retrieve the account
+        $account = \Stripe\Account::retrieve($user->stripe_customer_id);
+
+        // Get payouts
+        $payouts = \Stripe\Payout::all(['limit' => 100], ['stripe_account' => $account->id]);
+
+        // Return the payouts
+        return response()->json($payouts, 200);
+    }
+
+    /**
+     * stripeAccountSettingsLink
+     * 
+     * This method is used to get the stripe account settings link
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function stripeAccountSettingsLink(Request $request)
+    {
+        $user = $request->user();
+
+        // Validate the request
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Check if the user has a stripe account
+        if (!$user->stripe_customer_id) {
+            return response()->json(['error' => 'User does not have a stripe account'], 404);
+        }
+
+        // Set the Stripe API key
+        Stripe::setApiKey(env('STRIPE_SECRET'));
+
+        // Retrieve the account
+        $account = \Stripe\Account::retrieve($user->stripe_customer_id);
+
+        // Create an account link for the user to complete onboarding
+        $accountLink = \Stripe\AccountLink::create([
+            'account' => $account->id,
+            'refresh_url' => env('FRONTEND_URL') . '/stripe',
+            'return_url' => env('FRONTEND_URL') . '/stripe',
+            'type' => 'account_onboarding',
+        ]);
+
+        // Return the account link
+        return response()->json(['url' => $accountLink->url], 200);
+    }
 }

@@ -111,6 +111,10 @@ Route::prefix('stripe')->group(function () {
     Route::get('/user/onboarding/verify', [StripeController::class, 'userOnboardingVerify'])->middleware('auth:sanctum');
 
     Route::post('/client/onboarding', [StripeController::class, 'clientOnboarding'])->middleware('auth:client');
+
+    Route::get('/user/account/get', [StripeController::class, 'getStripeAccountDetails'])->middleware('auth:sanctum');
+    Route::get('/user/account/payouts', [StripeController::class, 'getStripePayouts'])->middleware('auth:sanctum');
+    Route::get('/user/account/settingsLink', [StripeController::class, 'stripeAccountSettingsLink'])->middleware('auth:sanctum');
 }); 
 
 /**
